@@ -12,6 +12,8 @@ const ProtectedRoute = ({ children, redirectPath = '/login' }) => {
   }
 
   if (!isAuthenticated || !user) {
+    // Avoid redirect loops if this component is mistakenly used on the login route
+    if (location.pathname === redirectPath) return null
     return (
       <Navigate
         to={redirectPath}

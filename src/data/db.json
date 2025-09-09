@@ -11,17 +11,17 @@
   ],
   "restaurants": [
     {
-      "name": "sdf",
-      "description": "sdfd",
-      "address": "asd",
-      "phone": "sad",
-      "email": "sddsf@sdffsdf.com",
-      "logo_url": "asd",
-      "working_hours": "asd",
+      "name": "asds",
+      "description": "",
+      "address": "",
+      "phone": "",
+      "email": "asd@gmail.com",
+      "logo_url": "",
+      "working_hours": "",
       "template_id": 1,
       "primary_color": "#007bff",
       "secondary_color": "#6b7280",
-      "updated_at": "2025-09-09T11:44:44.699Z",
+      "updated_at": "2025-09-09T12:45:20.345Z",
       "id": "1"
     }
   ],

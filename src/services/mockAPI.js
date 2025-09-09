@@ -1,124 +1,50 @@
-// Mock API service that simulates real API calls
+// Mock API service (auth uses live backend; other endpoints remain local JSON for now)
+import apiClient from '@services/apiClient'
+
 const BASE_URL = 'http://localhost:3001'
 
 // Simulate API delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
-// Token utilities (simulate JWTs)
-const createToken = (prefix) => `${prefix}-${Math.random().toString(36).slice(2)}-${Date.now()}`
-const nowInSeconds = () => Math.floor(Date.now() / 1000)
-
-// Token lifetimes (short access, longer refresh)
-const ACCESS_TOKEN_TTL_SECONDS = 60 * 5 // 5 minutes
-const REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7 // 7 days
-
 const STORAGE_KEYS = {
   accessToken: 'authAccessToken',
-  refreshToken: 'authRefreshToken',
-  accessExp: 'authAccessExp',
-  refreshExp: 'authRefreshExp',
 }
-
-const persistTokens = ({ accessToken, refreshToken, accessExp, refreshExp }) => {
-  if (accessToken) localStorage.setItem(STORAGE_KEYS.accessToken, accessToken)
-  if (refreshToken) localStorage.setItem(STORAGE_KEYS.refreshToken, refreshToken)
-  if (accessExp) localStorage.setItem(STORAGE_KEYS.accessExp, String(accessExp))
-  if (refreshExp) localStorage.setItem(STORAGE_KEYS.refreshExp, String(refreshExp))
-}
-
-const readTokens = () => ({
-  accessToken: localStorage.getItem(STORAGE_KEYS.accessToken),
-  refreshToken: localStorage.getItem(STORAGE_KEYS.refreshToken),
-  accessExp: Number(localStorage.getItem(STORAGE_KEYS.accessExp) || 0),
-  refreshExp: Number(localStorage.getItem(STORAGE_KEYS.refreshExp) || 0),
-})
-
-const clearTokens = () => {
-  Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k))
-}
-
-const issueTokens = () => {
-  const accessToken = createToken('access')
-  const refreshToken = createToken('refresh')
-  const accessExp = nowInSeconds() + ACCESS_TOKEN_TTL_SECONDS
-  const refreshExp = nowInSeconds() + REFRESH_TOKEN_TTL_SECONDS
-  persistTokens({ accessToken, refreshToken, accessExp, refreshExp })
-  return { accessToken, refreshToken, accessExp, refreshExp }
-}
-
-const isTokenValid = (token, exp) => Boolean(token) && nowInSeconds() < Number(exp || 0)
 
 const mockAPI = {
-  // Auth APIs
+  // Auth APIs (live)
   auth: {
     login: async (credentials) => {
-      await delay(600)
-
-      console.log("hello", credentials);
-
-
-      if (credentials.email === 'Abhishek.jha@openspaceservices.com' && credentials.password === 'password123') {
-        const user = {
-          id: 1,
-          name: 'John Doe',
-          email: 'john@example.com',
-          role: 'owner'
-        }
-
-        const { accessToken, refreshToken, accessExp, refreshExp } = issueTokens()
-
-        return { data: { token: accessToken, refreshToken, accessExp, refreshExp, user } }
-      } else {
-        throw new Error('Invalid credentials')
+      // Live login
+      const data = await apiClient.post('/auth/login', credentials)
+      if (data?.token) {
+        localStorage.setItem(STORAGE_KEYS.accessToken, data.token)
       }
+      return { data }
     },
 
     register: async (userData) => {
-      await delay(800)
-
-      const newUser = {
-        id: Date.now(),
-        ...userData,
-        role: 'owner',
-        created_at: new Date().toISOString()
+      // Live register
+      const data = await apiClient.post('/auth/register', userData)
+      if (data?.token) {
+        localStorage.setItem(STORAGE_KEYS.accessToken, data.token)
       }
-
-      const { accessToken, refreshToken, accessExp, refreshExp } = issueTokens()
-      return { data: { token: accessToken, refreshToken, accessExp, refreshExp, user: newUser } }
+      return { data }
     },
 
     verifyToken: async () => {
-      await delay(300)
-      const { accessToken, accessExp } = readTokens()
-
-      if (isTokenValid(accessToken, accessExp)) {
-        return {
-          id: 1,
-          name: 'John Doe',
-          email: 'john@example.com',
-          role: 'owner'
-        }
-      } else {
-        throw new Error('Invalid or expired token')
-      }
+      const token = localStorage.getItem(STORAGE_KEYS.accessToken)
+      if (!token) throw new Error('No token')
+      // If token exists, treat as authenticated (server will truly validate on API calls)
+      return { id: 1, name: 'User', email: 'unknown@example.com', role: 'owner' }
     },
 
     refresh: async () => {
-      await delay(300)
-      const { refreshToken, refreshExp } = readTokens()
-      if (!isTokenValid(refreshToken, refreshExp)) {
-        clearTokens()
-        throw new Error('Refresh token invalid or expired')
-      }
-      const accessToken = createToken('access')
-      const accessExp = nowInSeconds() + ACCESS_TOKEN_TTL_SECONDS
-      persistTokens({ accessToken, accessExp })
-      return { data: { token: accessToken, accessExp } }
+      // No refresh endpoint provided by live API yet
+      throw new Error('Refresh not supported')
     },
 
     logout: async () => {
-      await delay(200)
-      clearTokens()
+      localStorage.removeItem(STORAGE_KEYS.accessToken)
       return { success: true }
     }
   },

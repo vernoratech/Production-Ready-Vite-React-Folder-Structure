@@ -16,11 +16,11 @@ const LoginPage = () => {
   const location = useLocation()
 
   useEffect(() => {
-    if (isAuthenticated) {
-      const from = location.state?.from || '/dashboard'
-      navigate(from, { replace: true })
-    }
-  }, [isAuthenticated, navigate, location])
+    if (!isAuthenticated) return
+    const from = location.state?.from
+    if (from) navigate(from, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
