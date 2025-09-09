@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import Button from '@components/ui/Button/Button'
@@ -14,13 +14,21 @@ const LoginPage = () => {
   const { login, isLoading, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const hasRedirectedRef = useRef(false)
 
   useEffect(() => {
     if (!isAuthenticated) return
-    const from = location.state?.from
-    if (from) navigate(from, { replace: true })
+    if (hasRedirectedRef.current) return
+    // Only redirect if we are currently on the login route and we have a valid 'from'
+    if (location.pathname === '/login') {
+      const from = location.state?.from
+      if (from) {
+        hasRedirectedRef.current = true
+        navigate(from, { replace: true, state: {} })
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated])
+  }, [isAuthenticated, location.pathname])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
