@@ -11,10 +11,9 @@ const STORAGE_KEYS = {
 }
 
 const mockAPI = {
-  // Auth APIs (live)
+  // Auth APIs (live only)
   auth: {
     login: async (credentials) => {
-      // Live login
       const data = await apiClient.post('/auth/login', credentials)
       if (data?.token) {
         localStorage.setItem(STORAGE_KEYS.accessToken, data.token)
@@ -23,7 +22,6 @@ const mockAPI = {
     },
 
     register: async (userData) => {
-      // Live register
       const data = await apiClient.post('/auth/register', userData)
       if (data?.token) {
         localStorage.setItem(STORAGE_KEYS.accessToken, data.token)

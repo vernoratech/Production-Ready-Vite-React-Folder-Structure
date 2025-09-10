@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import mockAPI from '@services/mockAPI'
 
-const AuthContext = createContext(null)
+const AuthContext = createContext({})
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
@@ -10,32 +10,40 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const navigate = useNavigate()
 
-  const establishSession = useCallback(async () => {
-    try {
-      const userData = await mockAPI.auth.verifyToken()
-      setUser(userData)
-      setIsAuthenticated(true)
-    } catch (error) {
-      setUser(null)
-      setIsAuthenticated(false)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
   useEffect(() => {
-    establishSession()
-  }, [establishSession])
+    const checkAuth = async () => {
+      try {
+        const userData = await mockAPI.auth.verifyToken()
+        setUser(userData)
+        setIsAuthenticated(true)
+      } catch (error) {
+        // Only log errors that aren't "No token" (which is expected when not logged in)
+        if (error.message !== 'No token') {
+          console.error('Auth check failed:', error)
+        }
+        setUser(null)
+        setIsAuthenticated(false)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    checkAuth()
+  }, [])
 
   const login = async (credentials) => {
     try {
       setIsLoading(true)
       const response = await mockAPI.auth.login(credentials)
+
       const { user: userData } = response.data
+
       setUser(userData)
       setIsAuthenticated(true)
+
       return { success: true, user: userData }
     } catch (error) {
+      console.error('Login failed:', error)
       return {
         success: false,
         error: error.message || 'Login failed'
@@ -49,34 +57,34 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoading(true)
       const response = await mockAPI.auth.register(userData)
+
       const { user: newUser } = response.data
+
       setUser(newUser)
       setIsAuthenticated(true)
+
       return { success: true, user: newUser }
     } catch (error) {
-      return { success: false, error: error.message || 'Registration failed' }
+      console.error('Registration failed:', error)
+      return {
+        success: false,
+        error: error.message || 'Registration failed'
+      }
     } finally {
       setIsLoading(false)
     }
   }
 
-  const refreshSession = async () => {
+  const logout = async () => {
     try {
-      const res = await mockAPI.auth.refresh()
-      const userData = await mockAPI.auth.verifyToken()
-      setUser(userData)
-      setIsAuthenticated(true)
-      return { success: true }
-    } catch (e) {
-      return { success: false, error: e.message }
+      await mockAPI.auth.logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      setUser(null)
+      setIsAuthenticated(false)
+      navigate('/login', { replace: true })
     }
-  }
-
-  const logout = () => {
-    mockAPI.auth.logout()
-    setUser(null)
-    setIsAuthenticated(false)
-    navigate('/login', { replace: true })
   }
 
   const value = {
@@ -85,7 +93,6 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     login,
     register,
-    refreshSession,
     logout,
   }
 

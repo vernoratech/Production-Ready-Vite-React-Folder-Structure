@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import Button from '@components/ui/Button/Button'
 import Input from '@components/ui/Input/Input'
-import mockAPI from '@services/mockAPI'
+import TemplateSelector from '@components/ui/TemplateSelector/TemplateSelector'
 import { useNavigate } from 'react-router-dom'
 
 const RestaurantFormPage = () => {
@@ -36,7 +36,8 @@ const RestaurantFormPage = () => {
 
     setLoading(true)
     try {
-      const payload = {
+      // Store restaurant data locally for now (until live API endpoints are available)
+      const restaurantData = {
         name: form.name,
         description: form.description,
         address: form.address,
@@ -49,8 +50,14 @@ const RestaurantFormPage = () => {
         secondary_color: form.secondary_color,
         updated_at: new Date().toISOString()
       }
-      await mockAPI.restaurant.updateProfile(payload)
+
+      // Store in localStorage for now
+      localStorage.setItem('restaurantData', JSON.stringify(restaurantData))
       localStorage.setItem('restaurantSetupCompleted', 'true')
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500))
+
       navigate('/dashboard', { replace: true })
     } catch (e2) {
       setError(e2.message || 'Failed to save')
@@ -96,10 +103,12 @@ const RestaurantFormPage = () => {
             <Input label="Working hours (JSON or text)" name="working_hours" value={form.working_hours} onChange={onChange} />
           </div>
 
-          <div className="md:col-span-1">
-            <Input label="Template ID" name="template_id" type="number" value={form.template_id} onChange={onChange} />
+          <div className="md:col-span-2">
+            <TemplateSelector
+              selectedId={form.template_id}
+              onChange={(id) => setForm(f => ({ ...f, template_id: id }))}
+            />
           </div>
-          <div className="md:col-span-1" />
 
           <div className="md:col-span-1">
             <Input label="Primary color" name="primary_color" type="text" value={form.primary_color} onChange={onChange} />

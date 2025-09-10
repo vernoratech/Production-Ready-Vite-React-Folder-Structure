@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import Button from '@components/ui/Button/Button'
 import Input from '@components/ui/Input/Input'
+import Loading from '@components/ui/Loading/Loading'
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -14,21 +15,14 @@ const LoginPage = () => {
   const { login, isLoading, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const hasRedirectedRef = useRef(false)
 
+  // Handle redirect for authenticated users
   useEffect(() => {
-    if (!isAuthenticated) return
-    if (hasRedirectedRef.current) return
-    // Only redirect if we are currently on the login route and we have a valid 'from'
-    if (location.pathname === '/login') {
-      const from = location.state?.from
-      if (from) {
-        hasRedirectedRef.current = true
-        navigate(from, { replace: true, state: {} })
-      }
+    if (isAuthenticated) {
+      const from = location.state?.from || '/restaurant-setup'
+      navigate(from, { replace: true })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, location.pathname])
+  }, [isAuthenticated, navigate, location.state?.from])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -37,7 +31,7 @@ const LoginPage = () => {
     const result = await login(formData)
 
     if (result.success) {
-      navigate('/restaurant-setup', { replace: true })
+      // Navigation will be handled by useEffect
     } else {
       setError(result.error)
     }
@@ -50,12 +44,18 @@ const LoginPage = () => {
     })
   }
 
+  // Show loading if already authenticated
+  if (isAuthenticated) {
+    return <Loading overlay text="Redirecting..." />
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8">
         <Link to="/">
           <Button className="bg-blue-500">Go back</Button>
         </Link>
+
         <div className="text-center">
           <div className="text-4xl font-bold text-vesnoratech-primary mb-2">V</div>
           <h2 className="text-3xl font-bold text-gray-900">VesnoraTech</h2>
@@ -65,8 +65,8 @@ const LoginPage = () => {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800">
             <strong>Demo Login:</strong><br />
-            Email: john@example.com<br />
-            Password: password123
+            Email: Harsh@example.com<br />
+            Password: Admin@1234
           </p>
         </div>
 
